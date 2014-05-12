@@ -1,0 +1,12 @@
+<div id='main'>
+<%= render :file => '/plugins/sifhmail/app/views/email/_post', :locals => {:post => post} %>
+
+<hr>
+
+<div class='footer'>
+%{respond_instructions}
+</div>
+<div class='footer'>
+%{unsubscribe_link}
+</div>
+</div>

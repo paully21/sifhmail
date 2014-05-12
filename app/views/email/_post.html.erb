@@ -1,0 +1,17 @@
+<table class='post-wrapper'>
+  <tbody>
+    <tr>
+      <td class='body'><%= cooked_post_for_email(post) %><br /><br /></td>
+    </tr>
+    <tr>
+      <td style="max-width: 65px;">
+        <img src="<%= post.user.small_avatar_url%>" title="<%= post.user.username%>">
+      </td>
+      <td>
+        <a class="username" href="<%=Discourse.base_url%>/users/<%= post.user.username_lower%>" target="_blank"><%= post.user.name %></a><br>
+        Contact <%= post.user.name %> directly via email at <a href="mailto:<%= post.user.email%>"><%= post.user.email %></a>
+      </td>
+    </tr>    
+  </tbody>
+</table>
+<br />
