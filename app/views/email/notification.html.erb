@@ -1,4 +1,9 @@
 <div id='main'>
+<% if top.present? %>
+	<div><%= top %></div>
+ 	<hr>
+<% end %>
+ 
 <%= render :file => '/plugins/sifhmail/app/views/email/_post', :locals => {:post => post} %>
 
 <hr>

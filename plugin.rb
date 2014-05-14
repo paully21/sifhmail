@@ -7,7 +7,7 @@ after_initialize do
       send_notification_email(
         title: post.topic.title,
         post: post,
-        from_alias: user.name || user.username, #"[" + post.topic.category.name + "]",
+        from_alias: post.topic.category.name,
         allow_reply_by_email: true,
         notification_type: "posted",
         user: user
@@ -65,10 +65,12 @@ after_initialize do
         end
       end
 
+      top = SiteContent.content_for(:notification_email_top)
+
       html = UserNotificationRenderer.new().render(
         file: '/plugins/sifhmail/app/views/email/notification',
         format: :html,
-        locals: { context_posts: context_posts, post: post }
+        locals: { context_posts: context_posts, post: post, top: top ? PrettyText.cook(top).html_safe : nil }
       )
 
       template = "user_notifications.user_#{notification_type}"
