@@ -1,5 +1,7 @@
-# file: plugin.rb
-# Author: paully21
+# name: sifhmail
+# about: Mail template customizations for SIFH discourse
+# version: 0.1
+# authors: Paul Apostolos
 
 after_initialize do
    UserNotifications.class_eval do
