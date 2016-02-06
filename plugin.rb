@@ -72,8 +72,8 @@ after_initialize do
       html = UserNotificationRenderer.new().render(
         file: '/plugins/sifhmail/app/views/email/notification',
         format: :html,
-		locals: { context_posts: context_posts, post: post }
-        #locals: { context_posts: context_posts, post: post, top: top ? PrettyText.cook(top).html_safe : nil }
+		#locals: { context_posts: context_posts, post: post }
+        locals: { context_posts: context_posts, post: post, top: nil }
       )
 
       template = "user_notifications.user_#{notification_type}"
