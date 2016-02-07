@@ -144,7 +144,6 @@ after_initialize do
 
       email_opts = {
         topic_title: title,
-		  topic_excerpt: topic_excerpt,
 		  message: email_post_markdown(post),
 		  url: post.url,
 		  post_id: post.id,
