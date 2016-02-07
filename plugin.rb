@@ -67,13 +67,11 @@ after_initialize do
         end
       end
 
-      #top = SiteContent.content_for(:notification_email_top)
 
       html = UserNotificationRenderer.new().render(
         file: '/plugins/sifhmail/app/views/email/notification',
         format: :html,
-		#locals: { context_posts: context_posts, post: post }
-        locals: { context_posts: context_posts, post: post, top: nil }
+		locals: { context_posts: context_posts, post: post, top: nil }
       )
 
       template = "user_notifications.user_#{notification_type}"
@@ -95,6 +93,7 @@ after_initialize do
         html_override: html,
         style: :notification
       }
+	  
 
       # If we have a display name, change the from address
       if from_alias.present?
