@@ -29,16 +29,24 @@ after_initialize do
     	result
   	end
 
-	def self.get_context_posts(post, topic_user)
+	def self.get_context_posts(post, topic_user, user)
+		
+		if user.user_option.email_previous_replies == UserOption.previous_replies_type[:never]
+			return []
+		end
+
+		allowed_post_types = [Post.types[:regular]]
+		allowed_post_types << Post.types[:whisper] if topic_user.try(:user).try(:staff?)
+		
 		context_posts = Post.where(topic_id: post.topic_id)
                         .where("post_number < ?", post.post_number)
                         .where(user_deleted: false)
                         .where(hidden: false)
-                        .where(post_type: Topic.visible_post_types)
+                        .where(post_type: allowed_post_types)
                         .order('created_at desc')
                         .limit(SiteSetting.email_posts_context)
 
-    if topic_user && topic_user.last_emailed_post_number
+    if topic_user && topic_user.last_emailed_post_number && user.user_option.email_previous_replies == UserOption.previous_replies_type[:unless_emailed]
       context_posts = context_posts.where("post_number > ?", topic_user.last_emailed_post_number)
     end
 
@@ -102,6 +110,8 @@ after_initialize do
 		from_alias = opts[:from_alias]
 		notification_type = opts[:notification_type]
 		user = opts[:user]
+		locale = user_locale(user)
+		
 		# category name
 		category = Topic.find_by(id: post.topic_id).category
 		if opts[:show_category_in_subject] && post.topic_id && category && !category.uncategorized?
@@ -130,13 +140,17 @@ after_initialize do
 		end
 	  end
 
-
+	  in_reply_to_post = post.reply_to_post if user.user_option.email_in_reply_to
+      
       html = UserNotificationRenderer.new().render(
         file: '/plugins/sifhmail/app/views/email/notification',
         format: :html,
-		locals: { context_posts: context_posts, post: post, top: nil }
+		locals: { context_posts: context_posts,reached_limit: reached_limit, post: post, in_reply_to_post: in_reply_to_post,
+                  classes: RTL.new(user).css_class, top: nil }
       )
 
+	   message = email_post_markdown(post) + (reached_limit ? "\n\n#{I18n.t "user_notifications.reached_limit", count: SiteSetting.max_emails_per_day_per_user}" : "");
+	  
       template = "user_notifications.user_#{notification_type}"
       if post.topic.private_message?
         template << "_pm"
@@ -144,7 +158,7 @@ after_initialize do
 
       email_opts = {
         topic_title: title,
-		  message: email_post_markdown(post),
+		  message: message,
 		  url: post.url,
 		  post_id: post.id,
 		  topic_id: post.topic_id,
@@ -163,7 +177,8 @@ after_initialize do
 		  html_override: html,
 		  site_description: SiteSetting.site_description,
 		  site_title: SiteSetting.title,
-		  style: :notification
+		  style: :notification,
+		  locale: locale
       }
 	  
 
