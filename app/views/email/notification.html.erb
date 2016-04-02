@@ -6,11 +6,10 @@
 
   <% if  in_reply_to_post.present? || context_posts.present? %>
     <div class='footer'>%{respond_instructions}</div>
-
     <hr>
-
-    <h4 class='.previous-discussion'><%= t "user_notifications.previous_discussion" %></h4>
-
+  <% end %>
+ 
+ 
 	<% if in_reply_to_post.present? %>
      <h4 class='.previous-discussion'><%= t "user_notifications.in_reply_to" %></h4>
      <%= render partial: 'email/post', locals: { post: in_reply_to_post, use_excerpt: true} %>

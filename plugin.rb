@@ -130,7 +130,7 @@ after_initialize do
 	  context = ""
 	  tu = TopicUser.get(post.topic_id, user)
 	  
-	  context_posts = get_context_posts(post, tu)
+	  context_posts = get_context_posts(post, tu, user)
 
 	  # make .present? cheaper
 	  context_posts = context_posts.to_a
@@ -142,6 +142,11 @@ after_initialize do
 		end
 	  end
 
+	  reached_limit = SiteSetting.max_emails_per_day_per_user > 0
+	  reached_limit &&= (EmailLog.where(user_id: user.id, skipped: false)
+                            .where('created_at > ?', 1.day.ago)
+                            .count) >= (SiteSetting.max_emails_per_day_per_user-1)
+	  
 	  in_reply_to_post = post.reply_to_post if user.user_option.email_in_reply_to
       
       html = UserNotificationRenderer.new().render(
