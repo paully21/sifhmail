@@ -12,7 +12,7 @@
  
 	<% if in_reply_to_post.present? %>
      <h4 class='.previous-discussion'><%= t "user_notifications.in_reply_to" %></h4>
-     <%= render partial: 'email/post', locals: { post: in_reply_to_post, use_excerpt: true} %>
+     <%= render :file => '/plugins/sifhmail/app/views/email/_post', locals: { post: in_reply_to_post, use_excerpt: true} %>
     <% end %>
 	
     <% if context_posts.present? %>
