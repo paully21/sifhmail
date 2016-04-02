@@ -20,6 +20,50 @@ after_initialize do
 		}
     notification_email(user, opts)
     end
+	
+	def self.digest(user, opts={})
+		@user = user
+		@base_url = Discourse.base_url
+
+		min_date = opts[:since] || @user.last_emailed_at || @user.last_seen_at || 1.month.ago
+
+		@site_name = SiteSetting.email_prefix.presence || SiteSetting.title
+
+		@header_color = ColorScheme.hex_for_name('header_background')
+		@anchor_color = ColorScheme.hex_for_name('tertiary')
+		@last_seen_at = short_date(@user.last_seen_at || @user.created_at)
+
+		# A list of topics to show the user
+		@featured_topics = Topic.for_digest(user, min_date, limit: SiteSetting.digest_topics, top_order: true).to_a
+
+		# Don't send email unless there is content in it
+		if @featured_topics.present?
+		  featured_topic_ids = @featured_topics.map(&:id)
+
+		  @new_topics_since_seen = Topic.new_since_last_seen(user, min_date, featured_topic_ids).count
+		  if @new_topics_since_seen > SiteSetting.digest_topics
+			category_counts = Topic.new_since_last_seen(user, min_date, featured_topic_ids).group(:category_id).count
+
+			@new_by_category = []
+			if category_counts.present?
+			  Category.where(id: category_counts.keys).each do |c|
+				@new_by_category << [c, category_counts[c.id]]
+			  end
+			  @new_by_category.sort_by! {|c| -c[1]}
+			end
+		  end
+
+		  @featured_topics, @new_topics = @featured_topics[0..4], @featured_topics[5..-1]
+		  @markdown_linker = MarkdownLinker.new(Discourse.base_url)
+		  @unsubscribe_key = DigestUnsubscribeKey.create_key_for(@user)
+
+		  build_email user.email,
+					  from_alias: I18n.t('user_notifications.digest.from', site_name: SiteSetting.title),
+					  subject: I18n.t('user_notifications.digest.subject_template',
+									  site_name: @site_name,
+									  date: short_date(Time.now))
+		end
+	end
 
     def self.email_post_markdown(post)
     	result = "[email-indent]\n"
@@ -81,7 +125,6 @@ after_initialize do
 		use_site_subject = opts[:use_site_subject]
 		add_re_to_subject = opts[:add_re_to_subject]
 		show_category_in_subject = opts[:show_category_in_subject]
-		use_template_html = opts[:use_template_html]
 		original_username = notification_data[:original_username] || notification_data[:display_username]
 
 		send_notification_email(
@@ -94,7 +137,7 @@ after_initialize do
 		  add_re_to_subject: add_re_to_subject,
 		  show_category_in_subject: show_category_in_subject,
 		  notification_type: notification_type,
-		  use_template_html: use_template_html,
+		  use_invite_template: opts[:use_invite_template],
 		  user: user
 		)
 	end
@@ -161,27 +204,28 @@ after_initialize do
 
       email_opts = {
         topic_title: title,
-		  message: message,
-		  url: post.url,
-		  post_id: post.id,
-		  topic_id: post.topic_id,
-		  context: context,
-		  username: username,
-		  add_unsubscribe_link: !user.staged,
-		  add_unsubscribe_via_email_link: user.mailing_list_mode,
-		  unsubscribe_url: post.topic.unsubscribe_url,
-		  allow_reply_by_email: allow_reply_by_email,
-		  use_site_subject: use_site_subject,
-		  add_re_to_subject: add_re_to_subject,
-		  show_category_in_subject: show_category_in_subject,
-		  private_reply: post.topic.private_message?,
-		  include_respond_instructions: !user.suspended?,
-		  template: template,
-		  html_override: html,
-		  site_description: SiteSetting.site_description,
-		  site_title: SiteSetting.title,
-		  style: :notification,
-		  locale: locale
+      message: message,
+      url: post.url,
+      post_id: post.id,
+      topic_id: post.topic_id,
+      context: context,
+      username: username,
+      add_unsubscribe_link: !user.staged,
+      add_unsubscribe_via_email_link: user.user_option.mailing_list_mode,
+      unsubscribe_url: post.topic.unsubscribe_url,
+      allow_reply_by_email: allow_reply_by_email,
+      only_reply_by_email: allow_reply_by_email && user.staged,
+      use_site_subject: use_site_subject,
+      add_re_to_subject: add_re_to_subject,
+      show_category_in_subject: show_category_in_subject,
+      private_reply: post.topic.private_message?,
+      include_respond_instructions: !user.suspended?,
+      template: template,
+      html_override: html,
+      site_description: SiteSetting.site_description,
+      site_title: SiteSetting.title,
+      style: :notification,
+      locale: locale
       }
 	  
 
