@@ -99,6 +99,9 @@ after_initialize do
 		)
 	end
 
+	def self.user_locale(user)
+		(user.locale.present? && I18n.available_locales.include?(user.locale.to_sym)) ? user.locale : nil
+	end
 	
     def self.send_notification_email(opts)
 		post = opts[:post]
