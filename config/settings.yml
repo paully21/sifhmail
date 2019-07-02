@@ -1,0 +1,4 @@
+plugins:
+  discourse_email_include_address_enabled:
+    default: true
+    client: true
